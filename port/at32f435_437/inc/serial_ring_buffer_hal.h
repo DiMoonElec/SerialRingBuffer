@@ -12,7 +12,7 @@ void SerialRingBufferHAL_EnterRxCritical(SerialRingBuffer_t *instance);
 void SerialRingBufferHAL_ExitRxCritical(SerialRingBuffer_t *instance);
 
 void SerialRingBufferHAL_TxEnable(SerialRingBuffer_t *instance);
-
+int SerialRingBufferHAL_TransferComplete(SerialRingBuffer_t *instance);
 
 void SerialRingBufferHAL_IRQHandler(SerialRingBuffer_t *instance);
 

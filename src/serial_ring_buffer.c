@@ -11,8 +11,6 @@ void SerialRingBuffer_Init(SerialRingBuffer_t *instance,
   RingBuffInit(&instance->fifo_rx, instance->buff_rx, buff_rx_size);
   RingBuffInit(&instance->fifo_tx, instance->buff_tx, buff_tx_size);
   
-  instance->tx_active = 0;
-  
   SerialRingBufferHAL_SerialEnable(instance);
 }
 
@@ -26,7 +24,6 @@ int SerialRingBuffer_Putc(SerialRingBuffer_t *instance, uint8_t c)
   if(freeItems > 0)
   {
     RingBuffPut(&instance->fifo_tx, c);
-    instance->tx_active = 1;
     SerialRingBufferHAL_TxEnable(instance);
   }
   else
@@ -52,6 +49,20 @@ int SerialRingBuffer_Getc(SerialRingBuffer_t *instance)
   return ret;
 }
 
+int SerialRingBuffer_TransferComplete(SerialRingBuffer_t *instance)
+{
+  return ((RingBuffNumOfItems(&instance->fifo_tx) == 0) 
+        &&  SerialRingBufferHAL_TransferComplete(instance));
+}
+
+void SerialRingBuffer_FlushRx(SerialRingBuffer_t *instance)
+{
+  SerialRingBufferHAL_EnterRxCritical(instance);
+  RingBuffClear(&instance->fifo_rx);
+  SerialRingBufferHAL_ExitRxCritical(instance);
+}
+
+
 void SerialRingBuffer_CharRxHandler(SerialRingBuffer_t *instance, uint8_t c)
 {
   RingBuffPut(&instance->fifo_rx, c);
@@ -59,14 +70,9 @@ void SerialRingBuffer_CharRxHandler(SerialRingBuffer_t *instance, uint8_t c)
 
 int SerialRingBuffer_CharTxHandler(SerialRingBuffer_t *instance)
 {
-  if(instance->tx_active && (RingBuffNumOfItems(&instance->fifo_tx) > 0))
-  {
+  if(RingBuffNumOfItems(&instance->fifo_tx) > 0)
     return RingBuffGet(&instance->fifo_tx);
-  }
   else
-  {
-    instance->tx_active = 0;
     return -1;
-  }
 }
 

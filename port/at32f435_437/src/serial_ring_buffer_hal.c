@@ -2,6 +2,8 @@
 
 void SerialRingBufferHAL_Init(SerialRingBuffer_t *instance)
 {
+  instance->hal.tx_active = 0;
+
   usart_flag_clear(instance->hal.usart_x, USART_RDBF_FLAG);
   usart_interrupt_enable(instance->hal.usart_x, USART_RDBF_INT, TRUE);
   NVIC_EnableIRQ(instance->hal.IRQn);  
@@ -34,7 +36,15 @@ void SerialRingBufferHAL_ExitRxCritical(SerialRingBuffer_t *instance)
 
 void SerialRingBufferHAL_TxEnable(SerialRingBuffer_t *instance)
 {
+  instance->hal.tx_active = 1;
   usart_interrupt_enable(instance->hal.usart_x, USART_TDBE_INT, TRUE);
+}
+
+int SerialRingBufferHAL_TransferComplete(SerialRingBuffer_t *instance)
+{
+  if((instance->hal.tx_active == 0) && (usart_flag_get(instance->hal.usart_x, USART_TDC_FLAG) == SET))
+    return 1;
+  return 0;
 }
 
 void SerialRingBufferHAL_IRQHandler(SerialRingBuffer_t *instance)
@@ -44,13 +54,19 @@ void SerialRingBufferHAL_IRQHandler(SerialRingBuffer_t *instance)
     SerialRingBuffer_CharRxHandler(instance, (uint8_t)usart_data_receive(instance->hal.usart_x));
   
   //Если прерывание пустого передатчика
-  if(usart_flag_get(instance->hal.usart_x, USART_TDBE_FLAG) == SET)
+  if(instance->hal.tx_active && (usart_flag_get(instance->hal.usart_x, USART_TDBE_FLAG) == SET))
   {
     int c = SerialRingBuffer_CharTxHandler(instance);
     
     if(c == -1)
+    {
       usart_interrupt_enable(instance->hal.usart_x, USART_TDBE_INT, FALSE);
+      instance->hal.tx_active = 0;
+    }
     else
+    {
+      usart_flag_get(instance->hal.usart_x, USART_TDC_FLAG);
       usart_data_transmit(instance->hal.usart_x, (uint8_t)c);
+    }
   }
 }

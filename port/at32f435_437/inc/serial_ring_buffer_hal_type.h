@@ -8,6 +8,7 @@ typedef struct
 {
   usart_type* usart_x;
   IRQn_Type IRQn;
+  uint8_t tx_active;
 } SerialRingBufferHAL_t;
 
 #endif

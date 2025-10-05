@@ -13,8 +13,6 @@ typedef struct
   RingBuff_t fifo_rx;
   RingBuff_t fifo_tx;
   
-  uint8_t tx_active;
-  
   SerialRingBufferHAL_t hal;
 } SerialRingBuffer_t;
 
@@ -24,6 +22,9 @@ void SerialRingBuffer_Init(SerialRingBuffer_t *instance,
                            uint8_t *buff_tx, uint32_t buff_tx_size);
 int SerialRingBuffer_Putc(SerialRingBuffer_t *instance, uint8_t c);
 int SerialRingBuffer_Getc(SerialRingBuffer_t *instance);
+
+int SerialRingBuffer_TransferComplete(SerialRingBuffer_t *instance);
+void SerialRingBuffer_FlushRx(SerialRingBuffer_t *instance);
 
 
 void SerialRingBuffer_CharRxHandler(SerialRingBuffer_t *instance, uint8_t c);
